@@ -290,12 +290,6 @@ int mt7921_register_device(struct mt792x_dev *dev)
 	dev->pm.idle_timeout = MT792x_PM_TIMEOUT;
 	dev->pm.stats.last_wake_event = jiffies;
 	dev->pm.stats.last_doze_event = jiffies;
-	if (!mt76_is_usb(&dev->mt76)) {
-		dev->pm.enable_user = true;
-		dev->pm.enable = true;
-		dev->pm.ds_enable_user = true;
-		dev->pm.ds_enable = true;
-	}
 
 	if (!mt76_is_mmio(&dev->mt76))
 		hw->extra_tx_headroom += MT_SDIO_TXD_SIZE + MT_SDIO_HDR_SIZE;
@@ -309,6 +303,8 @@ int mt7921_register_device(struct mt792x_dev *dev)
 	ret = mt792x_init_wiphy(hw);
 	if (ret)
 		return ret;
+
+	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
 
 	hw->wiphy->reg_notifier = mt7921_regd_notifier;
 	dev->mphy.sband_2g.sband.ht_cap.cap |=
