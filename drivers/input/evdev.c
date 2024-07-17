@@ -954,6 +954,21 @@ static int evdev_revoke(struct evdev *evdev, struct evdev_client *client,
 	return 0;
 }
 
+static int evdev_revoke_all(struct evdev *evdev, struct file *file)
+{
+	struct evdev_client *client;
+	input_flush_device(&evdev->handle, file);
+
+	spin_lock(&evdev->client_lock);
+	list_for_each_entry(client, &evdev->client_list, node) {
+		client->revoked = true;
+		evdev_ungrab(evdev, client);
+		wake_up_interruptible_poll(&client->wait, EPOLLHUP | EPOLLERR);
+	}
+	spin_unlock(&evdev->client_lock);
+	return 0;
+}
+
 /* must be called with evdev-mutex held */
 static int evdev_set_mask(struct evdev_client *client,
 			  unsigned int type,
@@ -1097,6 +1112,15 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
 			return -EINVAL;
 		else
 			return evdev_revoke(evdev, client, file);
+	
+	case EVIOCREVOKEALL:
+		if (!capable(CAP_SYS_ADMIN))
+		    return -EACCES;
+
+		if (p)
+			return -EINVAL;
+		else
+			return evdev_revoke_all(evdev, file);
 
 	case EVIOCGMASK: {
 		void __user *codes_ptr;

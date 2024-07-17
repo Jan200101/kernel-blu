@@ -63,7 +63,28 @@ struct joydev_client {
 	struct fasync_struct *fasync;
 	struct joydev *joydev;
 	struct list_head node;
+	bool revoked;
 };
+
+static int joydev_revoke(struct joydev *joydev, struct joydev_client *client)
+{
+	client->revoked = true;
+	wake_up_interruptible(&joydev->wait);
+	return 0;
+}
+
+static int joydev_revoke_all(struct joydev *joydev)
+{
+	struct joydev_client *client;
+
+	spin_lock(&joydev->client_lock);
+	list_for_each_entry(client, &joydev->client_list, node) {
+		client->revoked = true;
+	}
+	spin_unlock(&joydev->client_lock);
+	wake_up_interruptible(&joydev->wait);
+	return 0;
+}
 
 static int joydev_correct(int value, struct js_corr *corr)
 {
@@ -89,6 +110,9 @@ static void joydev_pass_event(struct joydev_client *client,
 			      struct js_event *event)
 {
 	struct joydev *joydev = client->joydev;
+	
+	if (client->revoked)
+		return;
 
 	/*
 	 * IRQs already disabled, just acquire the lock
@@ -345,6 +369,9 @@ static ssize_t joydev_0x_read(struct joydev_client *client,
 	struct JS_DATA_TYPE data;
 	int i;
 
+	if (client->revoked)
+		return -ENODEV;
+
 	spin_lock_irq(&input->event_lock);
 
 	/*
@@ -402,7 +429,7 @@ static ssize_t joydev_read(struct file *file, char __user *buf,
 		return -EAGAIN;
 
 	retval = wait_event_interruptible(joydev->wait,
-			!joydev->exist || joydev_data_pending(client));
+			!joydev->exist || client->revoked || joydev_data_pending(client));
 	if (retval)
 		return retval;
 
@@ -438,7 +465,7 @@ static __poll_t joydev_poll(struct file *file, poll_table *wait)
 
 	poll_wait(file, &joydev->wait, wait);
 	return (joydev_data_pending(client) ? (EPOLLIN | EPOLLRDNORM) : 0) |
-		(joydev->exist ?  0 : (EPOLLHUP | EPOLLERR));
+		(joydev->exist && !client->revoked ?  0 : (EPOLLHUP | EPOLLERR));
 }
 
 static int joydev_handle_JSIOCSAXMAP(struct joydev *joydev,
@@ -506,9 +533,8 @@ static int joydev_handle_JSIOCSBTNMAP(struct joydev *joydev,
 	return retval;
 }
 
-
-static int joydev_ioctl_common(struct joydev *joydev,
-				unsigned int cmd, void __user *argp)
+static int joydev_ioctl_common(struct joydev *joydev, struct joydev_client *client, 
+					unsigned int cmd, void __user *argp)
 {
 	struct input_dev *dev = joydev->handle.dev;
 	size_t len;
@@ -556,6 +582,20 @@ static int joydev_ioctl_common(struct joydev *joydev,
 		return copy_to_user(argp, joydev->corr,
 			sizeof(joydev->corr[0]) * joydev->nabs) ? -EFAULT : 0;
 
+	case JSIOCREVOKE:
+		if (argp)
+			return -EINVAL;
+		else
+			return joydev_revoke(joydev, client);
+
+	case JSIOCREVOKEALL:
+		if (!capable(CAP_SYS_ADMIN))
+			return -EACCES;
+
+		if (argp)
+			return -EINVAL;
+		else
+			return joydev_revoke_all(joydev);
 	}
 
 	/*
@@ -649,7 +689,7 @@ static long joydev_compat_ioctl(struct file *file,
 		break;
 
 	default:
-		retval = joydev_ioctl_common(joydev, cmd, argp);
+		retval = joydev_ioctl_common(joydev, client, cmd, argp);
 		break;
 	}
 
@@ -699,7 +739,7 @@ static long joydev_ioctl(struct file *file,
 		break;
 
 	default:
-		retval = joydev_ioctl_common(joydev, cmd, argp);
+		retval = joydev_ioctl_common(joydev, client, cmd, argp);
 		break;
 	}
  out:
