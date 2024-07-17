@@ -66,6 +66,10 @@ struct js_event {
 #define JSIOCSBTNMAP		_IOW('j', 0x33, __u16[KEY_MAX - BTN_MISC + 1])	/* set button mapping */
 #define JSIOCGBTNMAP		_IOR('j', 0x34, __u16[KEY_MAX - BTN_MISC + 1])	/* get button mapping */
 
+#define JSIOCREVOKE		_IOW('j', 0x91, int)			/* Revoke device access */
+#define JSIOCREVOKEALL	_IOW('j', 0x94, int)			/* Revoke device access from all clients. Requires CAP_SYS_ADMIN. */
+
+
 /*
  * Types and constants for get/set correction
  */

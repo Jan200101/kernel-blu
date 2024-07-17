@@ -185,6 +185,7 @@ struct input_mask {
 
 #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
 #define EVIOCREVOKE		_IOW('E', 0x91, int)			/* Revoke device access */
+#define EVIOCREVOKEALL	_IOW('E', 0x94, int)			/* Revoke device access from all clients. Requires CAP_SYS_ADMIN. */
 
 /**
  * EVIOCGMASK - Retrieve current event mask
