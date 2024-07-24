@@ -1,3 +1,10 @@
+* Wed Jul 24 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.1-0]
+- Initial set up for stable Fedora branch (Justin M. Forbes)
+- Reset RHEL_RELEASE for the 6.11 cycle (Justin M. Forbes)
+- redhat/configs: Enable CONFIG_VMWARE_VMCI/CONFIG_VMWARE_VMCI_VSOCKETS for RHEL (Vitaly Kuznetsov)
+- Linux v6.10.1
+Resolves: 
+
 * Mon Jul 15 2024 Fedora Kernel Team <kernel-team@fedoraproject.org> [6.10.0-64]
 - Linux v6.10.0
 Resolves: 
