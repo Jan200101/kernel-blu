@@ -1,3 +1,8 @@
+* Mon Aug 05 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.3-0]
+- Bluetooth: hci_event: Fix setting DISCOVERY_FINDING for passive scanning (Luiz Augusto von Dentz)
+- Linux v6.10.3
+Resolves: 
+
 * Sat Jul 27 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.2-0]
 - Linux v6.10.2
 Resolves: 
