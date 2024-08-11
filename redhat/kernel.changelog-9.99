@@ -1,3 +1,9 @@
+* Sun Aug 11 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.4-0]
+- wifi: brcmfmac: cfg80211: Handle SSID based pmksa deletion (Janne Grunau)
+- New config for 6.10.3 (Justin M. Forbes)
+- Linux v6.10.4
+Resolves: 
+
 * Mon Aug 05 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.3-0]
 - Bluetooth: hci_event: Fix setting DISCOVERY_FINDING for passive scanning (Luiz Augusto von Dentz)
 - Linux v6.10.3
