@@ -1,3 +1,9 @@
+* Mon Aug 19 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.6-0]
+- Add to BugsFixed (Justin M. Forbes)
+- selinux: revert our use of vma_is_initial_heap() (Paul Moore)
+- Linux v6.10.6
+Resolves: 
+
 * Wed Aug 14 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.5-0]
 - Revert "ata: libata-scsi: Honor the D_SENSE bit for CK_COND=1 and no error" (Niklas Cassel)
 - Linux v6.10.5
