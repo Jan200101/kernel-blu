@@ -1,3 +1,9 @@
+* Wed Sep 04 2024 Augusto Caringi <acaringi@redhat.com> [6.10.8-0]
+- Add to BugsFixed (Augusto Caringi)
+- xfs: xfs_finobt_count_blocks() walks the wrong btree (Dave Chinner)
+- Linux v6.10.8
+Resolves: 
+
 * Thu Aug 29 2024 Augusto Caringi <acaringi@redhat.com> [6.10.7-0]
 - KVM: PPC: Book3S HV nestedv2: Keep nested guest HASHPKEYR in sync (Shivaprasad G Bhat)
 - KVM: PPC: Book3S HV: Add one-reg interface for HASHPKEYR register (Shivaprasad G Bhat)
