@@ -13,6 +13,7 @@
 #include "amd_sfh_interface.h"
 #include "../hid_descriptor/amd_sfh_hid_desc.h"
 #include "../hid_descriptor/amd_sfh_hid_report_desc.h"
+#include "amd_sfh_hid_report_desc1_1.h"
 
 #define SENSOR_PROP_REPORTING_STATE_ALL_EVENTS_ENUM			0x41
 #define SENSOR_PROP_POWER_STATE_D0_FULL_POWER_ENUM			0x51
@@ -30,14 +31,14 @@ static int get_report_desc(int sensor_idx, u8 *rep_desc)
 {
 	switch (sensor_idx) {
 	case ACCEL_IDX: /* accelerometer */
-		memset(rep_desc, 0, sizeof(accel3_report_descriptor));
-		memcpy(rep_desc, accel3_report_descriptor,
-		       sizeof(accel3_report_descriptor));
+		memset(rep_desc, 0, sizeof(accel3_report_descriptor1_1));
+		memcpy(rep_desc, accel3_report_descriptor1_1,
+		       sizeof(accel3_report_descriptor1_1));
 		break;
 	case GYRO_IDX: /* gyroscope */
-		memset(rep_desc, 0, sizeof(gyro3_report_descriptor));
-		memcpy(rep_desc, gyro3_report_descriptor,
-		       sizeof(gyro3_report_descriptor));
+		memset(rep_desc, 0, sizeof(gyro3_report_descriptor1_1));
+		memcpy(rep_desc, gyro3_report_descriptor1_1,
+		       sizeof(gyro3_report_descriptor1_1));
 		break;
 	case MAG_IDX: /* magnetometer */
 		memset(rep_desc, 0, sizeof(comp3_report_descriptor));
@@ -201,9 +202,9 @@ static u8 get_input_rep(u8 current_index, int sensor_idx, int report_id,
 			     OFFSET_SENSOR_DATA_DEFAULT;
 		memcpy_fromio(&accel_data, sensoraddr, sizeof(struct sfh_accel_data));
 		get_common_inputs(&acc_input.common_property, report_id);
-		acc_input.in_accel_x_value = amd_sfh_float_to_int(accel_data.acceldata.x) / 100;
-		acc_input.in_accel_y_value = amd_sfh_float_to_int(accel_data.acceldata.y) / 100;
-		acc_input.in_accel_z_value = amd_sfh_float_to_int(accel_data.acceldata.z) / 100;
+		acc_input.in_accel_x_value = amd_sfh_float_to_int(accel_data.acceldata.x);
+		acc_input.in_accel_y_value = amd_sfh_float_to_int(accel_data.acceldata.y);
+		acc_input.in_accel_z_value = amd_sfh_float_to_int(accel_data.acceldata.z);
 		memcpy(input_report, &acc_input, sizeof(acc_input));
 		report_size = sizeof(acc_input);
 		break;
@@ -212,9 +213,9 @@ static u8 get_input_rep(u8 current_index, int sensor_idx, int report_id,
 			     OFFSET_SENSOR_DATA_DEFAULT;
 		memcpy_fromio(&gyro_data, sensoraddr, sizeof(struct sfh_gyro_data));
 		get_common_inputs(&gyro_input.common_property, report_id);
-		gyro_input.in_angel_x_value = amd_sfh_float_to_int(gyro_data.gyrodata.x) / 1000;
-		gyro_input.in_angel_y_value = amd_sfh_float_to_int(gyro_data.gyrodata.y) / 1000;
-		gyro_input.in_angel_z_value = amd_sfh_float_to_int(gyro_data.gyrodata.z) / 1000;
+		gyro_input.in_angel_x_value = amd_sfh_float_to_int(gyro_data.gyrodata.x);
+		gyro_input.in_angel_y_value = amd_sfh_float_to_int(gyro_data.gyrodata.y);
+		gyro_input.in_angel_z_value = amd_sfh_float_to_int(gyro_data.gyrodata.z);
 		memcpy(input_report, &gyro_input, sizeof(gyro_input));
 		report_size = sizeof(gyro_input);
 		break;
@@ -266,7 +267,7 @@ static u32 get_desc_size(int sensor_idx, int descriptor_name)
 	case ACCEL_IDX:
 		switch (descriptor_name) {
 		case descr_size:
-			return sizeof(accel3_report_descriptor);
+			return sizeof(accel3_report_descriptor1_1);
 		case input_size:
 			return sizeof(struct accel3_input_report);
 		case feature_size:
@@ -276,7 +277,7 @@ static u32 get_desc_size(int sensor_idx, int descriptor_name)
 	case GYRO_IDX:
 		switch (descriptor_name) {
 		case descr_size:
-			return sizeof(gyro3_report_descriptor);
+			return sizeof(gyro3_report_descriptor1_1);
 		case input_size:
 			return sizeof(struct gyro_input_report);
 		case feature_size:
