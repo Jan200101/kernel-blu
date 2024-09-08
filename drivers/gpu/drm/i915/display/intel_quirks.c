@@ -65,6 +65,12 @@ static void quirk_no_pps_backlight_power_hook(struct intel_display *display)
 	drm_info(display->drm, "Applying no pps backlight power quirk\n");
 }
 
+static void quirk_async_page_flips_force_disable(struct intel_display *display)
+{
+	display->drm->mode_config.async_page_flip = false;
+	drm_info(display->drm, "Applying async flip disable quirk\n");
+}
+
 struct intel_quirk {
 	int device;
 	int subsystem_vendor;
@@ -135,6 +141,20 @@ static const struct intel_dmi_quirk intel_dmi_quirks[] = {
 			{ }
 		},
 		.hook = quirk_no_pps_backlight_power_hook,
+	},
+	{
+		.dmi_id_list = &(const struct dmi_system_id[]) {
+			{
+				.callback = NULL,
+				.ident = "ASUS TUF DASH F15",
+				.matches = {
+					DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+					DMI_MATCH(DMI_PRODUCT_NAME, "ASUS TUF Dash F15 FX516PC_FX516PC"),
+				},
+			},
+			{ }
+		},
+		.hook = quirk_async_page_flips_force_disable,
 	},
 };
 
