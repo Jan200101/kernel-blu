@@ -1,3 +1,7 @@
+* Sun Sep 08 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.9-0]
+- Linux v6.10.9
+Resolves: 
+
 * Wed Sep 04 2024 Augusto Caringi <acaringi@redhat.com> [6.10.8-0]
 - Add to BugsFixed (Augusto Caringi)
 - xfs: xfs_finobt_count_blocks() walks the wrong btree (Dave Chinner)
