@@ -13,6 +13,7 @@ SPECRELEASED_KERNEL=$(RELEASED_KERNEL)
 SPECINCLUDE_FEDORA_FILES=$(INCLUDE_FEDORA_FILES)
 SPECINCLUDE_RHEL_FILES=$(INCLUDE_RHEL_FILES)
 SPECINCLUDE_RT_FILES=$(INCLUDE_RT_FILES)
+SPECINCLUDE_BLU_FILES=$(INCLUDE_BLU_FILES)
 
 ifneq (,$(findstring n,$(firstword -$(MAKEFLAGS))))
   # Do not set RHTEST on the command line. Use the make command built-in options
@@ -559,6 +560,10 @@ fedora-configs: dist-fedora-configs
 dist-rhel-configs: FLAVOR = rhel
 dist-rhel-configs: dist-configs
 rh-configs: dist-rhel-configs
+
+dist-blu-configs: FLAVOR = blu
+dist-blu-configs: dist-configs
+blu-configs: dist-blu-configs
 
 dist-configs-check: dist-configs-prep
 	+cd $(REDHAT)/configs; ./process_configs.sh $(PROCESS_CONFIGS_CHECK_OPTS) "" ""
