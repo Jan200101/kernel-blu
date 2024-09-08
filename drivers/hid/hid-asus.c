@@ -52,6 +52,10 @@ MODULE_DESCRIPTION("Asus HID Keyboard and TouchPad");
 #define FEATURE_KBD_LED_REPORT_ID1 0x5d
 #define FEATURE_KBD_LED_REPORT_ID2 0x5e
 
+#define ALLY_CFG_INTF_IN_ADDRESS 0x83
+#define ALLY_CFG_INTF_OUT_ADDRESS 0x04
+#define ALLY_X_INTERFACE_ADDRESS 0x87
+
 #define SUPPORT_KBD_BACKLIGHT BIT(0)
 
 #define MAX_TOUCH_MAJOR 8
@@ -84,6 +88,7 @@ MODULE_DESCRIPTION("Asus HID Keyboard and TouchPad");
 #define QUIRK_MEDION_E1239T		BIT(10)
 #define QUIRK_ROG_NKEY_KEYBOARD		BIT(11)
 #define QUIRK_ROG_CLAYMORE_II_KEYBOARD BIT(12)
+#define QUIRK_ROG_ALLY_XPAD		BIT(13)
 
 #define I2C_KEYBOARD_QUIRKS			(QUIRK_FIX_NOTEBOOK_REPORT | \
 						 QUIRK_NO_INIT_REPORTS | \
@@ -492,11 +497,18 @@ static void asus_kbd_backlight_work(struct work_struct *work)
  */
 static bool asus_kbd_wmi_led_control_present(struct hid_device *hdev)
 {
+	struct asus_drvdata *drvdata = hid_get_drvdata(hdev);
 	u32 value;
 	int ret;
 
 	if (!IS_ENABLED(CONFIG_ASUS_WMI))
 		return false;
+
+	if (drvdata->quirks & QUIRK_ROG_NKEY_KEYBOARD &&
+			dmi_check_system(asus_use_hid_led_dmi_ids)) {
+		hid_info(hdev, "using HID for asus::kbd_backlight\n");
+		return false;
+	}
 
 	ret = asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS,
 				       ASUS_WMI_DEVID_KBD_BACKLIGHT, 0, &value);
@@ -996,6 +1008,17 @@ static int asus_probe(struct hid_device *hdev, const struct hid_device_id *id)
 
 	drvdata->quirks = id->driver_data;
 
+	/* Ignore these endpoints as they will be used by other drivers */
+	if (drvdata->quirks & QUIRK_ROG_ALLY_XPAD) {
+		struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
+		struct usb_host_endpoint *ep = intf->cur_altsetting->endpoint;
+
+		if (ep->desc.bEndpointAddress == ALLY_X_INTERFACE_ADDRESS ||
+			ep->desc.bEndpointAddress == ALLY_CFG_INTF_IN_ADDRESS ||
+			ep->desc.bEndpointAddress == ALLY_CFG_INTF_OUT_ADDRESS)
+			return -ENODEV;
+	}
+
 	/*
 	 * T90CHI's keyboard dock returns same ID values as T100CHI's dock.
 	 * Thus, identify T90CHI dock with product name string.
@@ -1247,6 +1270,12 @@ static const struct hid_device_id asus_devices[] = {
 	  QUIRK_USE_KBD_BACKLIGHT | QUIRK_ROG_NKEY_KEYBOARD },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK,
 	    USB_DEVICE_ID_ASUSTEK_ROG_NKEY_ALLY),
+	  QUIRK_USE_KBD_BACKLIGHT | QUIRK_ROG_NKEY_KEYBOARD | QUIRK_ROG_ALLY_XPAD},
+	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK,
+	    USB_DEVICE_ID_ASUSTEK_ROG_NKEY_ALLY_X),
+	  QUIRK_USE_KBD_BACKLIGHT | QUIRK_ROG_NKEY_KEYBOARD | QUIRK_ROG_ALLY_XPAD },
+	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK,
+	    USB_DEVICE_ID_ASUSTEK_ROG_AZOTH_KEYBOARD),
 	  QUIRK_USE_KBD_BACKLIGHT | QUIRK_ROG_NKEY_KEYBOARD },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK,
 	    USB_DEVICE_ID_ASUSTEK_ROG_CLAYMORE_II_KEYBOARD),

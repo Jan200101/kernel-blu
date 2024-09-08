@@ -97,6 +97,12 @@ module_param(fnlock_default, bool, 0444);
 #define ASUS_THROTTLE_THERMAL_POLICY_OVERBOOST	1
 #define ASUS_THROTTLE_THERMAL_POLICY_SILENT	2
 
+#define ASUS_THROTTLE_THERMAL_POLICY_DEFAULT_VIVO	0
+#define ASUS_THROTTLE_THERMAL_POLICY_SILENT_VIVO	1
+#define ASUS_THROTTLE_THERMAL_POLICY_OVERBOOST_VIVO	2
+
+#define PLATFORM_PROFILE_MAX 2
+
 #define USB_INTEL_XUSB2PR		0xD0
 #define PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_XHCI	0x9c31
 
@@ -145,6 +151,20 @@ module_param(fnlock_default, bool, 0444);
 static const char * const ashs_ids[] = { "ATK4001", "ATK4002", NULL };
 
 static int throttle_thermal_policy_write(struct asus_wmi *);
+
+static const struct dmi_system_id asus_ally_mcu_quirk[] = {
+	{
+		.matches = {
+			DMI_MATCH(DMI_BOARD_NAME, "RC71L"),
+		},
+	},
+	{
+		.matches = {
+			DMI_MATCH(DMI_BOARD_NAME, "RC72L"),
+		},
+	},
+	{ },
+};
 
 static bool ashs_present(void)
 {
@@ -285,8 +305,8 @@ struct asus_wmi {
 	u32 kbd_rgb_dev;
 	bool kbd_rgb_state_available;
 
-	bool throttle_thermal_policy_available;
 	u8 throttle_thermal_policy_mode;
+	u32 throttle_thermal_policy_dev;
 
 	bool cpu_fan_curve_available;
 	bool gpu_fan_curve_available;
@@ -334,20 +354,29 @@ static int asus_wmi_evaluate_method3(u32 method_id,
 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID, 0, method_id,
 				     &input, &output);
 
-	if (ACPI_FAILURE(status))
+	pr_debug("%s called (0x%08x) with args: 0x%08x, 0x%08x, 0x%08x\n",
+		__func__, method_id, arg0, arg1, arg2);
+	if (ACPI_FAILURE(status)) {
+		pr_debug("%s, (0x%08x), arg 0x%08x failed: %d\n",
+			__func__, method_id, arg0, -EIO);
 		return -EIO;
+	}
 
 	obj = (union acpi_object *)output.pointer;
 	if (obj && obj->type == ACPI_TYPE_INTEGER)
 		tmp = (u32) obj->integer.value;
 
+	pr_debug("Result: 0x%08x\n", tmp);
 	if (retval)
 		*retval = tmp;
 
 	kfree(obj);
 
-	if (tmp == ASUS_WMI_UNSUPPORTED_METHOD)
+	if (tmp == ASUS_WMI_UNSUPPORTED_METHOD) {
+		pr_debug("%s, (0x%08x), arg 0x%08x failed: %d\n",
+			__func__, method_id, arg0, -ENODEV);
 		return -ENODEV;
+	}
 
 	return 0;
 }
@@ -377,20 +406,29 @@ static int asus_wmi_evaluate_method5(u32 method_id,
 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID, 0, method_id,
 				     &input, &output);
 
-	if (ACPI_FAILURE(status))
+	pr_debug("%s called (0x%08x) with args: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+		__func__, method_id, arg0, arg1, arg2, arg3, arg4);
+	if (ACPI_FAILURE(status)) {
+		pr_debug("%s, (0x%08x), arg 0x%08x failed: %d\n",
+			__func__, method_id, arg0, -EIO);
 		return -EIO;
+	}
 
 	obj = (union acpi_object *)output.pointer;
 	if (obj && obj->type == ACPI_TYPE_INTEGER)
 		tmp = (u32) obj->integer.value;
 
+	pr_debug("Result: %x\n", tmp);
 	if (retval)
 		*retval = tmp;
 
 	kfree(obj);
 
-	if (tmp == ASUS_WMI_UNSUPPORTED_METHOD)
+	if (tmp == ASUS_WMI_UNSUPPORTED_METHOD) {
+		pr_debug("%s, (0x%08x), arg 0x%08x failed: %d\n",
+			__func__, method_id, arg0, -ENODEV);
 		return -ENODEV;
+	}
 
 	return 0;
 }
@@ -416,8 +454,13 @@ static int asus_wmi_evaluate_method_buf(u32 method_id,
 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID, 0, method_id,
 				     &input, &output);
 
-	if (ACPI_FAILURE(status))
+	pr_debug("%s called (0x%08x) with args: 0x%08x, 0x%08x\n",
+		__func__, method_id, arg0, arg1);
+	if (ACPI_FAILURE(status)) {
+		pr_debug("%s, (0x%08x), arg 0x%08x failed: %d\n",
+			__func__, method_id, arg0, -EIO);
 		return -EIO;
+	}
 
 	obj = (union acpi_object *)output.pointer;
 
@@ -453,8 +496,11 @@ static int asus_wmi_evaluate_method_buf(u32 method_id,
 
 	kfree(obj);
 
-	if (err)
+	if (err) {
+		pr_debug("%s, (0x%08x), arg 0x%08x failed: %d\n",
+			__func__, method_id, arg0, err);
 		return err;
+	}
 
 	return 0;
 }
@@ -503,12 +549,56 @@ static int asus_wmi_get_devstate(struct asus_wmi *asus, u32 dev_id, u32 *retval)
 	return 0;
 }
 
-static int asus_wmi_set_devstate(u32 dev_id, u32 ctrl_param,
-				 u32 *retval)
+/**
+ * asus_wmi_get_devstate_dsts() - Get the WMI function state.
+ * @dev_id: The WMI function to call.
+ * @retval: A pointer to where to store the value returned from WMI.
+ *
+ * The returned WMI function state can also be used to determine if the WMI
+ * function is supported by checking if the asus_wmi_get_devstate_dsts()
+ * returns an error.
+ *
+ * On success the return value is 0, and the retval is a valid value returned
+ * by the successful WMI function call. An error value is returned only if the
+ * WMI function failed, or if it returns "unsupported" which is typically a 0
+ * (no return, and no 'supported' bit set), or a 0xFFFFFFFE (~1) which if not
+ * caught here can result in unexpected behaviour later.
+ */
+int asus_wmi_get_devstate_dsts(u32 dev_id, u32 *retval)
+{
+	int err;
+
+	err = asus_wmi_evaluate_method(ASUS_WMI_METHODID_DSTS, dev_id, 0, retval);
+	if (err)
+		return err;
+	/* Be explicit about retval */
+	if (*retval == 0xFFFFFFFE || *retval == 0)
+		return -ENODEV;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(asus_wmi_get_devstate_dsts);
+
+/**
+ * asus_wmi_set_devstate() - Set the WMI function state.
+ * @dev_id: The WMI function to call.
+ * @ctrl_param: The argument to be used for this WMI function.
+ * @retval: A pointer to where to store the value returned from WMI.
+ *
+ * The returned WMI function state if not checked here for error as
+ * asus_wmi_set_devstate() is not called unless first paired with a call to
+ * asus_wmi_get_devstate_dsts() to check that the WMI function is supported.
+ *
+ * On success the return value is 0, and the retval is a valid value returned
+ * by the successful WMI function call. An error value is returned only if the
+ * WMI function failed.
+ */
+int asus_wmi_set_devstate(u32 dev_id, u32 ctrl_param, u32 *retval)
 {
 	return asus_wmi_evaluate_method(ASUS_WMI_METHODID_DEVS, dev_id,
 					ctrl_param, retval);
 }
+EXPORT_SYMBOL_GPL(asus_wmi_set_devstate);
 
 /* Helper for special devices with magic return codes */
 static int asus_wmi_get_devstate_bits(struct asus_wmi *asus,
@@ -542,6 +632,7 @@ static bool asus_wmi_dev_is_present(struct asus_wmi *asus, u32 dev_id)
 {
 	u32 retval;
 	int status = asus_wmi_get_devstate(asus, dev_id, &retval);
+	pr_debug("%s called (0x%08x), retval: 0x%08x\n", __func__, dev_id, retval);
 
 	return status == 0 && (retval & ASUS_WMI_DSTS_PRESENCE_BIT);
 }
@@ -1685,7 +1776,8 @@ static int asus_wmi_led_init(struct asus_wmi *asus)
 			goto error;
 	}
 
-	if (!kbd_led_read(asus, &led_val, NULL)) {
+	if (!kbd_led_read(asus, &led_val, NULL) && !dmi_check_system(asus_use_hid_led_dmi_ids)) {
+		pr_info("using asus-wmi for asus::kbd_backlight\n");
 		asus->kbd_led_wk = led_val;
 		asus->kbd_led.name = "asus::kbd_backlight";
 		asus->kbd_led.flags = LED_BRIGHT_HW_CHANGED;
@@ -3127,7 +3219,7 @@ static int fan_curve_get_factory_default(struct asus_wmi *asus, u32 fan_dev)
 	int err, fan_idx;
 	u8 mode = 0;
 
-	if (asus->throttle_thermal_policy_available)
+	if (asus->throttle_thermal_policy_dev)
 		mode = asus->throttle_thermal_policy_mode;
 	/* DEVID_<C/G>PU_FAN_CURVE is switched for OVERBOOST vs SILENT */
 	if (mode == 2)
@@ -3334,7 +3426,7 @@ static ssize_t fan_curve_enable_store(struct device *dev,
 		 * For machines with throttle this is the only way to reset fans
 		 * to default mode of operation (does not erase curve data).
 		 */
-		if (asus->throttle_thermal_policy_available) {
+		if (asus->throttle_thermal_policy_dev) {
 			err = throttle_thermal_policy_write(asus);
 			if (err)
 				return err;
@@ -3551,8 +3643,8 @@ static const struct attribute_group asus_fan_curve_attr_group = {
 __ATTRIBUTE_GROUPS(asus_fan_curve_attr);
 
 /*
- * Must be initialised after throttle_thermal_policy_check_present() as
- * we check the status of throttle_thermal_policy_available during init.
+ * Must be initialised after throttle_thermal_policy_dev is set as
+ * we check the status of throttle_thermal_policy_dev during init.
  */
 static int asus_wmi_custom_fan_curve_init(struct asus_wmi *asus)
 {
@@ -3562,18 +3654,27 @@ static int asus_wmi_custom_fan_curve_init(struct asus_wmi *asus)
 
 	err = fan_curve_check_present(asus, &asus->cpu_fan_curve_available,
 				      ASUS_WMI_DEVID_CPU_FAN_CURVE);
-	if (err)
+	if (err) {
+		pr_err("%s, checked 0x%08x, failed: %d\n",
+			__func__, ASUS_WMI_DEVID_CPU_FAN_CURVE, err);
 		return err;
+	}
 
 	err = fan_curve_check_present(asus, &asus->gpu_fan_curve_available,
 				      ASUS_WMI_DEVID_GPU_FAN_CURVE);
-	if (err)
+	if (err) {
+		pr_err("%s, checked 0x%08x, failed: %d\n",
+			__func__, ASUS_WMI_DEVID_GPU_FAN_CURVE, err);
 		return err;
+	}
 
 	err = fan_curve_check_present(asus, &asus->mid_fan_curve_available,
 				      ASUS_WMI_DEVID_MID_FAN_CURVE);
-	if (err)
+	if (err) {
+		pr_err("%s, checked 0x%08x, failed: %d\n",
+			__func__, ASUS_WMI_DEVID_MID_FAN_CURVE, err);
 		return err;
+	}
 
 	if (!asus->cpu_fan_curve_available
 		&& !asus->gpu_fan_curve_available
@@ -3593,38 +3694,13 @@ static int asus_wmi_custom_fan_curve_init(struct asus_wmi *asus)
 }
 
 /* Throttle thermal policy ****************************************************/
-
-static int throttle_thermal_policy_check_present(struct asus_wmi *asus)
-{
-	u32 result;
-	int err;
-
-	asus->throttle_thermal_policy_available = false;
-
-	err = asus_wmi_get_devstate(asus,
-				    ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY,
-				    &result);
-	if (err) {
-		if (err == -ENODEV)
-			return 0;
-		return err;
-	}
-
-	if (result & ASUS_WMI_DSTS_PRESENCE_BIT)
-		asus->throttle_thermal_policy_available = true;
-
-	return 0;
-}
-
 static int throttle_thermal_policy_write(struct asus_wmi *asus)
 {
-	int err;
-	u8 value;
+	u8 value = asus->throttle_thermal_policy_mode;
 	u32 retval;
+	int err;
 
-	value = asus->throttle_thermal_policy_mode;
-
-	err = asus_wmi_set_devstate(ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY,
+	err = asus_wmi_set_devstate(asus->throttle_thermal_policy_dev,
 				    value, &retval);
 
 	sysfs_notify(&asus->platform_device->dev.kobj, NULL,
@@ -3654,7 +3730,7 @@ static int throttle_thermal_policy_write(struct asus_wmi *asus)
 
 static int throttle_thermal_policy_set_default(struct asus_wmi *asus)
 {
-	if (!asus->throttle_thermal_policy_available)
+	if (!asus->throttle_thermal_policy_dev)
 		return 0;
 
 	asus->throttle_thermal_policy_mode = ASUS_THROTTLE_THERMAL_POLICY_DEFAULT;
@@ -3666,7 +3742,7 @@ static int throttle_thermal_policy_switch_next(struct asus_wmi *asus)
 	u8 new_mode = asus->throttle_thermal_policy_mode + 1;
 	int err;
 
-	if (new_mode > ASUS_THROTTLE_THERMAL_POLICY_SILENT)
+	if (new_mode > PLATFORM_PROFILE_MAX)
 		new_mode = ASUS_THROTTLE_THERMAL_POLICY_DEFAULT;
 
 	asus->throttle_thermal_policy_mode = new_mode;
@@ -3705,7 +3781,7 @@ static ssize_t throttle_thermal_policy_store(struct device *dev,
 	if (result < 0)
 		return result;
 
-	if (new_mode > ASUS_THROTTLE_THERMAL_POLICY_SILENT)
+	if (new_mode > PLATFORM_PROFILE_MAX)
 		return -EINVAL;
 
 	asus->throttle_thermal_policy_mode = new_mode;
@@ -3722,10 +3798,52 @@ static ssize_t throttle_thermal_policy_store(struct device *dev,
 	return count;
 }
 
-// Throttle thermal policy: 0 - default, 1 - overboost, 2 - silent
+/*
+ * Throttle thermal policy: 0 - default, 1 - overboost, 2 - silent
+ */
 static DEVICE_ATTR_RW(throttle_thermal_policy);
 
 /* Platform profile ***********************************************************/
+static int asus_wmi_platform_profile_to_vivo(struct asus_wmi *asus, int mode)
+{
+	bool vivo;
+
+	vivo = asus->throttle_thermal_policy_dev == ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY_VIVO;
+
+	if (vivo) {
+		switch (mode) {
+		case ASUS_THROTTLE_THERMAL_POLICY_DEFAULT:
+			return ASUS_THROTTLE_THERMAL_POLICY_DEFAULT_VIVO;
+		case ASUS_THROTTLE_THERMAL_POLICY_OVERBOOST:
+			return ASUS_THROTTLE_THERMAL_POLICY_OVERBOOST_VIVO;
+		case ASUS_THROTTLE_THERMAL_POLICY_SILENT:
+			return ASUS_THROTTLE_THERMAL_POLICY_SILENT_VIVO;
+		}
+	}
+
+	return mode;
+}
+
+static int asus_wmi_platform_profile_mode_from_vivo(struct asus_wmi *asus, int mode)
+{
+	bool vivo;
+
+	vivo = asus->throttle_thermal_policy_dev == ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY_VIVO;
+
+	if (vivo) {
+		switch (mode) {
+		case ASUS_THROTTLE_THERMAL_POLICY_DEFAULT_VIVO:
+			return ASUS_THROTTLE_THERMAL_POLICY_DEFAULT;
+		case ASUS_THROTTLE_THERMAL_POLICY_OVERBOOST_VIVO:
+			return ASUS_THROTTLE_THERMAL_POLICY_OVERBOOST;
+		case ASUS_THROTTLE_THERMAL_POLICY_SILENT_VIVO:
+			return ASUS_THROTTLE_THERMAL_POLICY_SILENT;
+		}
+	}
+
+	return mode;
+}
+
 static int asus_wmi_platform_profile_get(struct platform_profile_handler *pprof,
 					enum platform_profile_option *profile)
 {
@@ -3733,10 +3851,9 @@ static int asus_wmi_platform_profile_get(struct platform_profile_handler *pprof,
 	int tp;
 
 	asus = container_of(pprof, struct asus_wmi, platform_profile_handler);
-
 	tp = asus->throttle_thermal_policy_mode;
 
-	switch (tp) {
+	switch (asus_wmi_platform_profile_mode_from_vivo(asus, tp)) {
 	case ASUS_THROTTLE_THERMAL_POLICY_DEFAULT:
 		*profile = PLATFORM_PROFILE_BALANCED;
 		break;
@@ -3775,7 +3892,7 @@ static int asus_wmi_platform_profile_set(struct platform_profile_handler *pprof,
 		return -EOPNOTSUPP;
 	}
 
-	asus->throttle_thermal_policy_mode = tp;
+	asus->throttle_thermal_policy_mode = asus_wmi_platform_profile_to_vivo(asus, tp);
 	return throttle_thermal_policy_write(asus);
 }
 
@@ -3788,7 +3905,7 @@ static int platform_profile_setup(struct asus_wmi *asus)
 	 * Not an error if a component platform_profile relies on is unavailable
 	 * so early return, skipping the setup of platform_profile.
 	 */
-	if (!asus->throttle_thermal_policy_available)
+	if (!asus->throttle_thermal_policy_dev)
 		return 0;
 
 	dev_info(dev, "Using throttle_thermal_policy for platform_profile support\n");
@@ -3803,8 +3920,13 @@ static int platform_profile_setup(struct asus_wmi *asus)
 		asus->platform_profile_handler.choices);
 
 	err = platform_profile_register(&asus->platform_profile_handler);
-	if (err)
+	if (err == -EEXIST) {
+		pr_warn("%s, a platform_profile handler is already registered\n", __func__);
+		return 0;
+	} else if (err) {
+		pr_err("%s, failed at platform_profile_register: %d\n", __func__, err);
 		return err;
+	}
 
 	asus->platform_profile_support = true;
 	return 0;
@@ -4203,7 +4325,7 @@ static void asus_wmi_handle_event_code(int code, struct asus_wmi *asus)
 	if (code == NOTIFY_KBD_FBM || code == NOTIFY_KBD_TTP) {
 		if (asus->fan_boost_mode_available)
 			fan_boost_mode_switch_next(asus);
-		if (asus->throttle_thermal_policy_available)
+		if (asus->throttle_thermal_policy_dev)
 			throttle_thermal_policy_switch_next(asus);
 		return;
 
@@ -4375,7 +4497,7 @@ static umode_t asus_sysfs_is_visible(struct kobject *kobj,
 	else if (attr == &dev_attr_fan_boost_mode.attr)
 		ok = asus->fan_boost_mode_available;
 	else if (attr == &dev_attr_throttle_thermal_policy.attr)
-		ok = asus->throttle_thermal_policy_available;
+		ok = asus->throttle_thermal_policy_dev != 0;
 	else if (attr == &dev_attr_ppt_pl2_sppt.attr)
 		devid = ASUS_WMI_DEVID_PPT_PL2_SPPT;
 	else if (attr == &dev_attr_ppt_pl1_spl.attr)
@@ -4401,8 +4523,10 @@ static umode_t asus_sysfs_is_visible(struct kobject *kobj,
 	else if (attr == &dev_attr_available_mini_led_mode.attr)
 		ok = asus->mini_led_dev_id != 0;
 
-	if (devid != -1)
+	if (devid != -1) {
 		ok = !(asus_wmi_get_devstate_simple(asus, devid) < 0);
+		pr_debug("%s called 0x%08x, ok: %x\n", __func__, devid, ok);
+	}
 
 	return ok ? attr->mode : 0;
 }
@@ -4650,7 +4774,7 @@ static int asus_wmi_add(struct platform_device *pdev)
 	asus->dgpu_disable_available = asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_DGPU);
 	asus->kbd_rgb_state_available = asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_TUF_RGB_STATE);
 	asus->ally_mcu_usb_switch = acpi_has_method(NULL, ASUS_USB0_PWR_EC0_CSEE)
-						&& dmi_match(DMI_BOARD_NAME, "RC71L");
+						&& dmi_check_system(asus_ally_mcu_quirk);
 
 	if (asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_MINI_LED_MODE))
 		asus->mini_led_dev_id = ASUS_WMI_DEVID_MINI_LED_MODE;
@@ -4667,18 +4791,17 @@ static int asus_wmi_add(struct platform_device *pdev)
 	else if (asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_TUF_RGB_MODE2))
 		asus->kbd_rgb_dev = ASUS_WMI_DEVID_TUF_RGB_MODE2;
 
+	if (asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY))
+		asus->throttle_thermal_policy_dev = ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY;
+	else if (asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY_VIVO))
+		asus->throttle_thermal_policy_dev = ASUS_WMI_DEVID_THROTTLE_THERMAL_POLICY_VIVO;
+
 	err = fan_boost_mode_check_present(asus);
 	if (err)
 		goto fail_fan_boost_mode;
 
-	err = throttle_thermal_policy_check_present(asus);
-	if (err)
-		goto fail_throttle_thermal_policy;
-	else
-		throttle_thermal_policy_set_default(asus);
-
 	err = platform_profile_setup(asus);
-	if (err)
+	if (err && err != -EEXIST)
 		goto fail_platform_profile_setup;
 
 	err = asus_wmi_sysfs_init(asus->platform_device);
@@ -4771,7 +4894,6 @@ fail_hwmon:
 fail_input:
 	asus_wmi_sysfs_exit(asus->platform_device);
 fail_sysfs:
-fail_throttle_thermal_policy:
 fail_custom_fan_curve:
 fail_platform_profile_setup:
 	if (asus->platform_profile_support)
