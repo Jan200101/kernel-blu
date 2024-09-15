@@ -1,3 +1,9 @@
+* Thu Sep 12 2024 Augusto Caringi <acaringi@redhat.com> [6.10.10-0]
+- Add entry for BugsFixed (Justin M. Forbes)
+- drm/nouveau/fb: restore init() for ramgp102 (Ben Skeggs)
+- Linux v6.10.10
+Resolves: 
+
 * Sun Sep 08 2024 Justin M. Forbes <jforbes@fedoraproject.org> [6.10.9-0]
 - Linux v6.10.9
 Resolves: 
