@@ -358,7 +358,7 @@ static const struct software_node *ssam_node_group_sp8[] = {
 	NULL,
 };
 
-/* Devices for Surface Pro 9 */
+/* Devices for Surface Pro 9 and 10 */
 static const struct software_node *ssam_node_group_sp9[] = {
 	&ssam_node_root,
 	&ssam_node_hub_kip,
@@ -419,7 +419,7 @@ static const struct acpi_device_id ssam_platform_hub_match[] = {
 	{ "MSHW0343", (unsigned long)ssam_node_group_sp9 },
 
 	/* Surface Pro 10 */
-	{ "MSHW0510", (unsigned long)ssam_node_group_sp10 },
+	{ "MSHW0510", (unsigned long)ssam_node_group_sp9 },
 
 	/* Surface Book 2 */
 	{ "MSHW0107", (unsigned long)ssam_node_group_gen5 },
@@ -446,7 +446,7 @@ static const struct acpi_device_id ssam_platform_hub_match[] = {
 	{ "MSHW0350", (unsigned long)ssam_node_group_sl5 },
 
 	/* Surface Laptop 6 */
-	{ "MSHW0530", (unsigned long)ssam_node_group_sl5 },
+	{ "MSHW0530", (unsigned long)ssam_node_group_sl6 },
 
 	/* Surface Laptop Go 1 */
 	{ "MSHW0118", (unsigned long)ssam_node_group_slg1 },
