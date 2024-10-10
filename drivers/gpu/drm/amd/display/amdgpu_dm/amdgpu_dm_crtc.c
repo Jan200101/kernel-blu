@@ -426,7 +426,7 @@ static int amdgpu_dm_crtc_late_register(struct drm_crtc *crtc)
 }
 #endif
 
-#ifdef AMD_PRIVATE_COLOR
+#ifdef CONFIG_AMD_PRIVATE_COLOR
 /**
  * dm_crtc_additional_color_mgmt - enable additional color properties
  * @crtc: DRM CRTC
@@ -508,7 +508,7 @@ static const struct drm_crtc_funcs amdgpu_dm_crtc_funcs = {
 #if defined(CONFIG_DEBUG_FS)
 	.late_register = amdgpu_dm_crtc_late_register,
 #endif
-#ifdef AMD_PRIVATE_COLOR
+#ifdef CONFIG_AMD_PRIVATE_COLOR
 	.atomic_set_property = amdgpu_dm_atomic_crtc_set_property,
 	.atomic_get_property = amdgpu_dm_atomic_crtc_get_property,
 #endif
@@ -603,18 +603,6 @@ static int amdgpu_dm_crtc_helper_atomic_check(struct drm_crtc *crtc,
 		return -EINVAL;
 	}
 
-	/*
-	 * Only allow async flips for fast updates that don't change the FB
-	 * pitch, the DCC state, rotation, etc.
-	 */
-	if (crtc_state->async_flip &&
-	    dm_crtc_state->update_type != UPDATE_TYPE_FAST) {
-		drm_dbg_atomic(crtc->dev,
-			       "[CRTC:%d:%s] async flips are only supported for fast updates\n",
-			       crtc->base.id, crtc->name);
-		return -EINVAL;
-	}
-
 	/* In some use cases, like reset, no stream is attached */
 	if (!dm_crtc_state->stream)
 		return 0;
@@ -687,7 +675,7 @@ int amdgpu_dm_crtc_init(struct amdgpu_display_manager *dm,
 
 	drm_mode_crtc_set_gamma_size(&acrtc->base, MAX_COLOR_LEGACY_LUT_ENTRIES);
 
-#ifdef AMD_PRIVATE_COLOR
+#ifdef CONFIG_AMD_PRIVATE_COLOR
 	dm_crtc_additional_color_mgmt(&acrtc->base);
 #endif
 	return 0;

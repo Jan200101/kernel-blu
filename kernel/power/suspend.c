@@ -11,6 +11,7 @@
 
 #include <linux/string.h>
 #include <linux/delay.h>
+#include <linux/dmi.h>
 #include <linux/errno.h>
 #include <linux/init.h>
 #include <linux/console.h>
@@ -60,6 +61,33 @@ static DECLARE_SWAIT_QUEUE_HEAD(s2idle_wait_head);
 
 enum s2idle_states __read_mostly s2idle_state;
 static DEFINE_RAW_SPINLOCK(s2idle_lock);
+
+// The ROG Ally series disconnects its controllers on Display Off, without
+// holding a lock, introducing a race condition. Add a delay to allow the
+// controller to disconnect cleanly prior to suspend.
+// In addition, the EC of the device rarely (1/20 attempts) may get stuck
+// after suspend in an invalid state, where it mirros Sleep behavior.
+static const struct platform_s2idle_quirks rog_ally_quirks = {
+	.delay_display_off = 200,
+	.delay_sleep_entry = 300,
+};
+
+static const struct dmi_system_id platform_s2idle_quirks[] = {
+	{
+		.matches = {
+			DMI_MATCH(DMI_BOARD_NAME, "RC71L"),
+		},
+		.driver_data = (void *)&rog_ally_quirks
+	},
+	{
+		.matches = {
+			DMI_MATCH(DMI_BOARD_NAME, "RC72L"),
+		},
+		.driver_data = (void *)&rog_ally_quirks
+	},
+	{}
+};
+
 
 /**
  * pm_suspend_default_s2idle - Check if suspend-to-idle is the default suspend.
@@ -253,6 +281,30 @@ static bool sleep_state_supported(suspend_state_t state)
 	return state == PM_SUSPEND_TO_IDLE ||
 	       (valid_state(state) && !cxl_mem_active());
 }
+
+int platform_suspend_display_off(void)
+{
+	return s2idle_ops && s2idle_ops->display_off ? s2idle_ops->display_off() : 0;
+}
+EXPORT_SYMBOL_GPL(platform_suspend_display_off);
+
+int platform_suspend_sleep_entry(void)
+{
+	return s2idle_ops && s2idle_ops->sleep_entry ? s2idle_ops->sleep_entry() : 0;
+}
+EXPORT_SYMBOL_GPL(platform_suspend_sleep_entry);
+
+int platform_suspend_sleep_exit(void)
+{
+	return s2idle_ops && s2idle_ops->sleep_exit ? s2idle_ops->sleep_exit() : 0;
+}
+EXPORT_SYMBOL_GPL(platform_suspend_sleep_exit);
+
+int platform_suspend_display_on(void)
+{
+	return s2idle_ops && s2idle_ops->display_on ? s2idle_ops->display_on() : 0;
+}
+EXPORT_SYMBOL_GPL(platform_suspend_display_on);
 
 static int platform_suspend_prepare(suspend_state_t state)
 {
@@ -498,6 +550,25 @@ int suspend_devices_and_enter(suspend_state_t state)
 	if (state == PM_SUSPEND_TO_IDLE)
 		pm_set_suspend_no_platform();
 
+	/*
+	 * Windows transitions between Modern Standby states slowly, as with
+	 * Display On/Off, query the appropriate delays here for Sleep Entry/Exit.
+	 */
+	const struct dmi_system_id *s2idle_sysid = dmi_first_match(
+		platform_s2idle_quirks
+	);
+	const struct platform_s2idle_quirks *s2idle_quirks = s2idle_sysid ?
+		s2idle_sysid->driver_data : NULL;
+
+	/*
+	 * Linux does not have the concept of a "Sleep" state. As done with Display
+	 * On/Off, call the platform functions for Sleep Entry/Exit prior to the
+	 * suspend sequence.
+	 */
+	platform_suspend_sleep_entry();
+	if (s2idle_quirks && s2idle_quirks->delay_sleep_entry)
+		msleep(s2idle_quirks->delay_sleep_entry);
+
 	error = platform_suspend_begin(state);
 	if (error)
 		goto Close;
@@ -528,6 +599,10 @@ int suspend_devices_and_enter(suspend_state_t state)
  Close:
 	platform_resume_end(state);
 	pm_suspend_target_state = PM_SUSPEND_ON;
+
+	if (s2idle_quirks && s2idle_quirks->delay_sleep_exit)
+		msleep(s2idle_quirks->delay_sleep_exit);
+	platform_suspend_sleep_exit();
 	return error;
 
  Recover_platform:
@@ -577,6 +652,27 @@ static int enter_state(suspend_state_t state)
 	if (state == PM_SUSPEND_TO_IDLE)
 		s2idle_begin();
 
+	/*
+	 * Windows transitions between Modern Standby states slowly, over multiple
+	 * seconds. Certain manufacturers may rely on this, introducing race
+	 * conditions. Until Linux can support modern standby, add the relevant
+	 * delays between transitions here.
+	 */
+	const struct dmi_system_id *s2idle_sysid = dmi_first_match(
+		platform_s2idle_quirks
+	);
+	const struct platform_s2idle_quirks *s2idle_quirks = s2idle_sysid ?
+		s2idle_sysid->driver_data : NULL;
+
+	/*
+	 * Linux does not have the concept of a "Screen Off" state, so call
+	 * the platform functions for Display On/Off prior to the suspend
+	 * sequence, mirroring Windows which calls them outside of it as well.
+	 */
+	platform_suspend_display_off();
+	if (s2idle_quirks && s2idle_quirks->delay_display_off)
+		msleep(s2idle_quirks->delay_display_off);
+
 	if (sync_on_suspend_enabled) {
 		trace_suspend_resume(TPS("sync_filesystems"), 0, true);
 		ksys_sync_helper();
@@ -604,6 +700,10 @@ static int enter_state(suspend_state_t state)
 	suspend_finish();
  Unlock:
 	mutex_unlock(&system_transition_mutex);
+
+	if (s2idle_quirks && s2idle_quirks->delay_display_on)
+		msleep(s2idle_quirks->delay_display_on);
+	platform_suspend_display_on();
 	return error;
 }
 

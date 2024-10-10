@@ -1024,9 +1024,13 @@ menuconfig CGROUP_SCHED
 	  tasks.
 
 if CGROUP_SCHED
+config GROUP_SCHED_WEIGHT
+	def_bool n
+
 config FAIR_GROUP_SCHED
 	bool "Group scheduling for SCHED_OTHER"
 	depends on CGROUP_SCHED
+	select GROUP_SCHED_WEIGHT
 	default CGROUP_SCHED
 
 config CFS_BANDWIDTH
@@ -1050,6 +1054,12 @@ config RT_GROUP_SCHED
 	  schedule realtime tasks for non-root users until you allocate
 	  realtime bandwidth for them.
 	  See Documentation/scheduler/sched-rt-group.rst for more information.
+
+config EXT_GROUP_SCHED
+	bool
+	depends on SCHED_CLASS_EXT && CGROUP_SCHED
+	select GROUP_SCHED_WEIGHT
+	default y
 
 endif #CGROUP_SCHED
 
@@ -1296,6 +1306,23 @@ config CHECKPOINT_RESTORE
 	  entries.
 
 	  If unsure, say N here.
+
+config SCHED_BORE
+	bool "Burst-Oriented Response Enhancer"
+	default y
+	help
+	  In Desktop and Mobile computing, one might prefer interactive
+	  tasks to keep responsive no matter what they run in the background.
+
+	  Enabling this kernel feature modifies the scheduler to discriminate
+	  tasks by their burst time (runtime since it last went sleeping or
+	  yielding state) and prioritize those that run less bursty.
+	  Such tasks usually include window compositor, widgets backend,
+	  terminal emulator, video playback, games and so on.
+	  With a little impact to scheduling fairness, it may improve
+	  responsiveness especially under heavy background workload.
+
+	  If unsure, say Y here.
 
 config SCHED_AUTOGROUP
 	bool "Automatic process group scheduling"

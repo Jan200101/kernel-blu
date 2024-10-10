@@ -524,9 +524,11 @@ static __cpuidle void io_idle(unsigned long addr)
 	inb(addr);
 
 #ifdef	CONFIG_X86
-	/* No delay is needed if we are in guest */
-	if (boot_cpu_has(X86_FEATURE_HYPERVISOR))
-		return;
+	/*
+	 * No delay is needed if we are in guest or on a processor
+	 * based on the Zen microarchitecture.
+	 */
+	if (boot_cpu_has(X86_FEATURE_HYPERVISOR) || boot_cpu_has(X86_FEATURE_ZEN))
 	/*
 	 * Modern (>=Nehalem) Intel systems use ACPI via intel_idle,
 	 * not this code.  Assume that any Intel systems using this

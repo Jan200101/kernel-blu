@@ -82,6 +82,8 @@ struct task_group;
 struct task_struct;
 struct user_event_mm;
 
+#include <linux/sched/ext.h>
+
 /*
  * Task state bitmask. NOTE! These bits are also
  * encoded in fs/proc/array.c: get_task_state().
@@ -535,6 +537,14 @@ struct sched_statistics {
 #endif /* CONFIG_SCHEDSTATS */
 } ____cacheline_aligned;
 
+#ifdef CONFIG_SCHED_BORE
+struct sched_burst_cache {
+	u8				score;
+	u32				count;
+	u64				timestamp;
+};
+#endif // CONFIG_SCHED_BORE
+
 struct sched_entity {
 	/* For load-balancing: */
 	struct load_weight		load;
@@ -543,12 +553,22 @@ struct sched_entity {
 	u64				min_vruntime;
 
 	struct list_head		group_node;
-	unsigned int			on_rq;
+	unsigned char			on_rq;
+	unsigned char			rel_deadline;
 
 	u64				exec_start;
 	u64				sum_exec_runtime;
 	u64				prev_sum_exec_runtime;
 	u64				vruntime;
+#ifdef CONFIG_SCHED_BORE
+	u64				burst_time;
+	u8				prev_burst_penalty;
+	u8				curr_burst_penalty;
+	u8				burst_penalty;
+	u8				burst_score;
+	struct sched_burst_cache child_burst;
+	struct sched_burst_cache group_burst;
+#endif // CONFIG_SCHED_BORE
 	s64				vlag;
 	u64				slice;
 
@@ -810,6 +830,9 @@ struct task_struct {
 	struct sched_rt_entity		rt;
 	struct sched_dl_entity		dl;
 	struct sched_dl_entity		*dl_server;
+#ifdef CONFIG_SCHED_CLASS_EXT
+	struct sched_ext_entity		scx;
+#endif
 	const struct sched_class	*sched_class;
 
 #ifdef CONFIG_SCHED_CORE

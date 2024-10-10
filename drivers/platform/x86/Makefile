@@ -4,9 +4,13 @@
 # x86 Platform-Specific Drivers
 #
 
+# ACPI calls
+
 # Windows Management Interface
 obj-$(CONFIG_ACPI_WMI)		+= wmi.o
 obj-$(CONFIG_WMI_BMOF)		+= wmi-bmof.o
+
+obj-$(CONFIG_ACPI_CALL)		+= acpi_call.o
 
 # WMI drivers
 obj-$(CONFIG_HUAWEI_WMI)		+= huawei-wmi.o
@@ -65,6 +69,7 @@ obj-$(CONFIG_LENOVO_YMC)	+= lenovo-ymc.o
 obj-$(CONFIG_SENSORS_HDAPS)	+= hdaps.o
 obj-$(CONFIG_THINKPAD_ACPI)	+= thinkpad_acpi.o
 obj-$(CONFIG_THINKPAD_LMI)	+= think-lmi.o
+obj-$(CONFIG_LEGION_LAPTOP)	+= legion-laptop.o
 obj-$(CONFIG_YOGABOOK)		+= lenovo-yogabook.o
 obj-$(CONFIG_YT2_1380)		+= lenovo-yoga-tab2-pro-1380-fastcharger.o
 obj-$(CONFIG_LENOVO_WMI_CAMERA)	+= lenovo-wmi-camera.o
