@@ -2740,7 +2740,6 @@ int smu_get_power_limit(void *handle,
 		case SMU_PPT_LIMIT_CURRENT:
 			switch (amdgpu_ip_version(adev, MP1_HWIP, 0)) {
 			case IP_VERSION(13, 0, 2):
-			case IP_VERSION(13, 0, 6):
 			case IP_VERSION(13, 0, 14):
 			case IP_VERSION(11, 0, 7):
 			case IP_VERSION(11, 0, 11):
@@ -2762,7 +2761,10 @@ int smu_get_power_limit(void *handle,
 			*limit = smu->max_power_limit;
 			break;
 		case SMU_PPT_LIMIT_MIN:
-			*limit = smu->min_power_limit;
+			if (amdgpu_ignore_min_pcap)
+				*limit = 0;
+			else
+				*limit = smu->min_power_limit;
 			break;
 		default:
 			return -EINVAL;
@@ -2786,7 +2788,14 @@ static int smu_set_power_limit(void *handle, uint32_t limit)
 		if (smu->ppt_funcs->set_power_limit)
 			return smu->ppt_funcs->set_power_limit(smu, limit_type, limit);
 
-	if ((limit > smu->max_power_limit) || (limit < smu->min_power_limit)) {
+	if (amdgpu_ignore_min_pcap) {
+		if ((limit > smu->max_power_limit)) {
+			dev_err(smu->adev->dev,
+				"New power limit (%d) is over the max allowed %d\n",
+				limit, smu->max_power_limit);
+			return -EINVAL;
+		}
+	} else if ((limit > smu->max_power_limit) || (limit < smu->min_power_limit)) {
 		dev_err(smu->adev->dev,
 			"New power limit (%d) is out of range [%d,%d]\n",
 			limit, smu->min_power_limit, smu->max_power_limit);

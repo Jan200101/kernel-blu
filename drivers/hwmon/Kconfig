@@ -2046,6 +2046,17 @@ config SENSORS_SCH5636
 	  This driver can also be built as a module. If so, the module
 	  will be called sch5636.
 
+config SENSORS_STEAMDECK
+	tristate "Steam Deck EC sensors"
+	depends on MFD_STEAMDECK
+	help
+	  If you say yes here you get support for the hardware
+	  monitoring features exposed by EC firmware on Steam Deck
+	  devices
+
+	  This driver can also be built as a module. If so, the module
+	  will be called steamdeck-hwmon.
+
 config SENSORS_STTS751
 	tristate "ST Microelectronics STTS751"
 	depends on I2C
@@ -2079,6 +2090,16 @@ config SENSORS_SURFACE_FAN
 	  responsible for that, this driver merely provides monitoring.
 
 	  Select M or Y here, if you want to be able to read the fan's speed.
+
+config SENSORS_SURFACE_TEMP
+	tristate "Microsoft Surface Thermal Sensor Driver"
+	depends on SURFACE_AGGREGATOR
+	help
+	  Driver for monitoring thermal sensors connected via the Surface
+	  Aggregator Module (embedded controller) on Microsoft Surface devices.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called surface_temp.
 
 config SENSORS_ADC128D818
 	tristate "Texas Instruments ADC128D818"
