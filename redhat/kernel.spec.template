@@ -126,11 +126,7 @@ Summary: The Linux kernel
 %global zipsed -e 's/\.ko$/\.ko.%compext/'
 %endif
 
-%if 0%{?fedora}
-%define primary_target fedora
-%else
-%define primary_target rhel
-%endif
+%define primary_target blu
 
 #
 # genspec.sh variables
@@ -145,6 +141,8 @@ Summary: The Linux kernel
 %global include_rhel %%SPECINCLUDE_RHEL_FILES%%
 # Include RT files
 %global include_rt %%SPECINCLUDE_RT_FILES%%
+# Include BLU files
+%global include_blu %%SPECINCLUDE_BLU_FILES%%
 # Provide Patchlist.changelog file
 %global patchlist_changelog %%SPECPATCHLIST_CHANGELOG%%
 # Set released_kernel to 1 when the upstream source tarball contains a
@@ -993,6 +991,15 @@ Source474: %{name}-aarch64-rt-rhel.config
 Source475: %{name}-aarch64-rt-debug-rhel.config
 Source476: %{name}-x86_64-rt-rhel.config
 Source477: %{name}-x86_64-rt-debug-rhel.config
+%endif
+
+%if 0%{?include_blu}
+Source500: x509.genkey.blu
+
+Source501: %{name}-x86_64-blu.config
+Source502: %{name}-x86_64-debug-blu.config
+
+Source62: def_variants.yaml.blu
 %endif
 
 # Sources for kernel-tools
