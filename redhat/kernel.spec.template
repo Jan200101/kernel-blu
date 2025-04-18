@@ -123,11 +123,7 @@ Summary: The Linux kernel
 %global compression_flags --compress --check=crc32 --lzma2=dict=1MiB
 %global compext xz
 
-%if 0%{?fedora}
-%define primary_target fedora
-%else
-%define primary_target rhel
-%endif
+%define primary_target blu
 
 #
 # genspec.sh variables
@@ -144,6 +140,8 @@ Summary: The Linux kernel
 %global include_rt %%SPECINCLUDE_RT_FILES%%
 # Include Automotive files
 %global include_automotive %%SPECINCLUDE_AUTOMOTIVE_FILES%%
+# Include BLU files
+%global include_blu %%SPECINCLUDE_BLU_FILES%%
 # Provide Patchlist.changelog file
 %global patchlist_changelog %%SPECPATCHLIST_CHANGELOG%%
 # Set released_kernel to 1 when the upstream source tarball contains a
@@ -1059,6 +1057,15 @@ Source486: %{name}-x86_64-automotive-rhel.config
 Source487: %{name}-x86_64-automotive-debug-rhel.config
 %endif
 
+
+%if 0%{?include_blu}
+Source500: x509.genkey.blu
+
+Source501: %{name}-x86_64-blu.config
+Source502: %{name}-x86_64-debug-blu.config
+
+Source62: def_variants.yaml.blu
+%endif
 
 # Sources for kernel-tools
 Source2002: kvm_stat.logrotate
