@@ -178,6 +178,7 @@ x509.genkey
 configs/*.config
 redhat/rhdocs/*
 redhat/rhdocs
+redhat/*.log
 localversion
 .get_maintainer.conf
 
