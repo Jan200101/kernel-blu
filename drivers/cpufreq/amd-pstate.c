@@ -1587,6 +1587,9 @@ static int amd_pstate_epp_suspend(struct cpufreq_policy *policy)
 	/* invalidate to ensure it's rewritten during resume */
 	cpudata->cppc_req_cached = 0;
 
+	/* invalidate to ensure it's rewritten during resume */
+	cpudata->cppc_req_cached = 0;
+
 	/* set this flag to avoid setting core offline*/
 	cpudata->suspended = true;
 
