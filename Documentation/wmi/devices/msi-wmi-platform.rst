@@ -138,10 +138,6 @@ input data, the meaning of which depends on the subfeature being accessed.
 The output buffer contains a single byte which signals success or failure (``0x00`` on failure)
 and 31 bytes of output data, the meaning if which depends on the subfeature being accessed.
 
-.. note::
-   The ACPI control method responsible for handling the WMI method calls is not thread-safe.
-   This is a firmware bug that needs to be handled inside the driver itself.
-
 WMI method Get_EC()
 -------------------
 
@@ -168,6 +164,32 @@ The fan RPM readings can be calculated with the following formula:
         RPM = 480000 / <fan speed reading>
 
 If the fan speed reading is zero, then the fan RPM is zero too.
+
+The subfeature ``0x01`` is used to retrieve the fan speed table for the CPU fan. The output
+data contains the fan speed table and two bytes with unknown data. The fan speed table
+consists of six 8-bit entries, each containing a fan speed value in percent.
+
+The subfeature ``0x02`` is used tho retrieve the same data for the GPU fan.
+
+WMI method Set_Fan()
+--------------------
+
+The fan speed tables can be accessed using subfeature ``0x01`` (CPU fan) and subfeature ``0x02``
+(GPU fan). The input data has the same format as the output data of the ``Get_Fan`` WMI method.
+
+WMI method Get_AP()
+-------------------
+
+The current fan mode can be accessed using subfeature ``0x01``. The output data contains a flag
+byte and two bytes of unknown data. If the 7th bit inside the flag byte is cleared then all fans
+are operating in automatic mode, otherwise the fans operate based on the fan speed tables
+accessible thru the ``Get_Fan``/``Set_Fan`` WMI methods.
+
+WMI method Set_AP()
+-------------------
+
+The current fan mode can be changed using subfeature ``0x01``. The input data has the same format
+as the output data of the ``Get_AP`` WMI method.
 
 WMI method Get_WMI()
 --------------------
