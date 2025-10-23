@@ -7539,6 +7539,24 @@ static inline int __select_idle_cpu(int cpu, struct task_struct *p)
 DEFINE_STATIC_KEY_FALSE(sched_smt_present);
 EXPORT_SYMBOL_GPL(sched_smt_present);
 
+/*
+ * Return true if all the CPUs in the SMT core where @cpu belongs are idle,
+ * false otherwise.
+ */
+static inline bool is_idle_core(int cpu)
+{
+	int sibling;
+
+	if (!sched_smt_active())
+		return (available_idle_cpu(cpu) || sched_idle_cpu(cpu));
+
+	for_each_cpu(sibling, cpu_smt_mask(cpu))
+		if (!available_idle_cpu(sibling) && !sched_idle_cpu(sibling))
+			return false;
+
+	return true;
+}
+
 static inline void set_idle_cores(int cpu, int val)
 {
 	struct sched_domain_shared *sds;
@@ -7830,7 +7848,7 @@ static int select_idle_sibling(struct task_struct *p, int prev, int target)
 	 */
 	lockdep_assert_irqs_disabled();
 
-	if ((available_idle_cpu(target) || sched_idle_cpu(target)) &&
+	if (is_idle_core(target) &&
 	    asym_fits_cpu(task_util, util_min, util_max, target))
 		return target;
 
@@ -8615,7 +8633,18 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int wake_flags)
 		new_cpu = sched_balance_find_dst_cpu(sd, p, cpu, prev_cpu, sd_flag);
 	} else if (wake_flags & WF_TTWU) { /* XXX always ? */
 		/* Fast path */
-		new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
+		int recent_used_cpu = p->recent_used_cpu;
+
+		/*
+		 * If the previous CPU is an idle core, retain the same for
+		 * cache locality. Otherwise, search for an idle sibling.
+		 */
+		if (is_idle_core(prev_cpu))
+			new_cpu = prev_cpu;
+		else if (recent_used_cpu != prev_cpu && is_idle_core(recent_used_cpu))
+			new_cpu = recent_used_cpu;
+		else
+			new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
 	}
 	rcu_read_unlock();
 
