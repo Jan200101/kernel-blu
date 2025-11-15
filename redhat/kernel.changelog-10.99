@@ -1,3 +1,9 @@
+* Thu Nov 13 2025 Augusto Caringi <acaringi@redhat.com> [6.17.8-0]
+- rust: kbuild: workaround `rustdoc` doctests modifier bug (Miguel Ojeda)
+- rust: kbuild: treat `build_error` and `rustdoc` as kernel objects (Miguel Ojeda)
+- Linux v6.17.8
+Resolves: 
+
 * Sun Nov 02 2025 Justin M. Forbes <jforbes@fedoraproject.org> [6.17.7-0]
 - Linux v6.17.7
 Resolves: 
