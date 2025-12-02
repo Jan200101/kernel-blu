@@ -1,3 +1,8 @@
+* Mon Dec 01 2025 Augusto Caringi <acaringi@redhat.com> [6.17.10-0]
+- Revert "gpio: swnode: don't use the swnode's name as the key for GPIO lookup" (Justin M. Forbes)
+- Linux v6.17.10
+Resolves: 
+
 * Mon Nov 24 2025 Augusto Caringi <acaringi@redhat.com> [6.17.9-0]
 - Change RZ_DMAC from m to y for Fedora (Justin M. Forbes)
 - Linux v6.17.9
