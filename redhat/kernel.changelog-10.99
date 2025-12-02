@@ -1,3 +1,8 @@
+* Mon Nov 24 2025 Augusto Caringi <acaringi@redhat.com> [6.17.9-0]
+- Change RZ_DMAC from m to y for Fedora (Justin M. Forbes)
+- Linux v6.17.9
+Resolves: 
+
 * Thu Nov 13 2025 Augusto Caringi <acaringi@redhat.com> [6.17.8-0]
 - rust: kbuild: workaround `rustdoc` doctests modifier bug (Miguel Ojeda)
 - rust: kbuild: treat `build_error` and `rustdoc` as kernel objects (Miguel Ojeda)
