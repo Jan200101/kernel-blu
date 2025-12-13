@@ -1,3 +1,7 @@
+* Sat Dec 13 2025 Justin M. Forbes <jforbes@fedoraproject.org> [6.17.12-0]
+- Linux v6.17.12
+Resolves: 
+
 * Mon Dec 08 2025 Augusto Caringi <acaringi@redhat.com> [6.17.11-0]
 - Fix up config issue related to CONFIG_SCHED_PROXY_EXEC (Augusto Caringi)
 - Prepare for F41 EOL (Justin M. Forbes)
