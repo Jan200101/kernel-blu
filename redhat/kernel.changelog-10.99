@@ -1,3 +1,9 @@
+* Mon Dec 08 2025 Augusto Caringi <acaringi@redhat.com> [6.17.11-0]
+- Fix up config issue related to CONFIG_SCHED_PROXY_EXEC (Augusto Caringi)
+- Prepare for F41 EOL (Justin M. Forbes)
+- Linux v6.17.11
+Resolves: 
+
 * Mon Dec 01 2025 Augusto Caringi <acaringi@redhat.com> [6.17.10-0]
 - Revert "gpio: swnode: don't use the swnode's name as the key for GPIO lookup" (Justin M. Forbes)
 - Linux v6.17.10
