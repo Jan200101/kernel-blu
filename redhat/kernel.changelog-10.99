@@ -1,3 +1,9 @@
+* Sun Jan 11 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.18.5-0]
+- erofs: fix file-backed mounts no longer working on EROFS partitions (Gao Xiang)
+- erofs: don't bother with s_stack_depth increasing for now (Gao Xiang)
+- Linux v6.18.5
+Resolves: 
+
 * Thu Jan 08 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.18.4-0]
 - Linux v6.18.4
 Resolves: 
