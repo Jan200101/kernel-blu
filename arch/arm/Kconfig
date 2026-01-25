@@ -1215,8 +1215,8 @@ config HIGHMEM
 
 config HIGHPTE
 	bool "Allocate 2nd-level pagetables from highmem"
-	depends on HIGHMEM
-	default n
+	depends on HIGHMEM && !PREEMPT_RT
+	default y
 	help
 	  The VM uses one page of physical memory for each page table.
 	  For systems with a lot of processes, this can use a lot of

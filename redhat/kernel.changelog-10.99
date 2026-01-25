@@ -1,3 +1,16 @@
+* Fri Jan 23 2026 Augusto Caringi <acaringi@redhat.com> [6.18.7-0]
+- Fix up the configs for CONFIG_DEVICE_PRIVATE (Justin M. Forbes)
+- Linux v6.18.7
+Resolves: 
+
+* Sun Jan 18 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.18.6-0]
+- Conifg update for 6.18.6 backports (Justin M. Forbes)
+- fedora: aarch64: Enable TI_SCI_INTR_IRQCHIP as built-in (Ayush Singh)
+- Backport of Intel ISH HID patches to support sensors on Lenovo platforms (Vishnu Sankar) [2428677]
+- Backport of Intel ISH HID patches to support sensors on Lenovo platforms (Vishnu Sankar) [2428677]
+- Linux v6.18.6
+Resolves: rhbz#2428677
+
 * Sun Jan 11 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.18.5-0]
 - erofs: fix file-backed mounts no longer working on EROFS partitions (Gao Xiang)
 - erofs: don't bother with s_stack_depth increasing for now (Gao Xiang)
