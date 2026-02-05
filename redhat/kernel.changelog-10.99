@@ -1,3 +1,7 @@
+* Fri Jan 30 2026 Augusto Caringi <acaringi@redhat.com> [6.18.8-0]
+- Linux v6.18.8
+Resolves: 
+
 * Fri Jan 23 2026 Augusto Caringi <acaringi@redhat.com> [6.18.7-0]
 - Fix up the configs for CONFIG_DEVICE_PRIVATE (Justin M. Forbes)
 - Linux v6.18.7
