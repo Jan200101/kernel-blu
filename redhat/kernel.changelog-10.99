@@ -1,3 +1,57 @@
+* Fri Mar 13 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.8-0]
+- Fix mute LED on HP OmniBook 7 Laptop 16 (Justin M. Forbes)
+- Add Lenovo bug to BugsFixed for 6.19.8 (Justin M. Forbes)
+- Turn on Uniwill x86 platform driver (Justin M. Forbes)
+- ASoC: SDCA: Add ASoC jack hookup in class driver (Charles Keepax)
+- Linux v6.19.8
+Resolves: 
+
+* Thu Mar 12 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.7-0]
+- Add some BugsFixed by 6.19.7 (Justin M. Forbes)
+- drm/i915/psr: Compute psr_entry_setup_frames into intel_crtc_state (Jouni Högander)
+- drm/i915/psr: Disable PSR on update_m_n and update_lrr (Jouni Högander)
+- Turn on GPIB for Fedora (Justin M. Forbes)
+- drm/i915/psr: Fix for Panel Replay X granularity DPCD register handling (Jouni Högander)
+- drm/dp: Add definition for Panel Replay full-line granularity (Jouni Högander)
+- drm/i915/display: Allow async flip when Selective Fetch is enabled (Jouni Högander)
+- drm/i915/psr: Perform full frame update on async flip (Jouni Högander)
+- drm/i915/psr: Set plane id bit in crtc_state->async_flip_planes for PSR (Jouni Högander)
+- drm/i915/psr: Move sink_sync_latency to intel_connector (Jouni Högander)
+- drm/i915/psr: Move sink PSR and Panel Replay booleans to intel_connector (Jouni Högander)
+- drm/i915/psr: Move Panel Replay DSC sink support data to intel_connector (Jouni Högander)
+- drm/i915/psr: Clear pr_dpcd as well on disconnect (Jouni Högander)
+- drm/i915/psr: Move pr_dpcd and psr_dpcd to intel_connector (Jouni Högander)
+- drm/i915/psr: Compute Panel Replay/Adaptive Sync coexistence behavior (Jouni Högander)
+- drm/i915/psr: Use SU granularity information available in intel_connector (Jouni Högander)
+- drm/i915/psr: Add panel granularity information into intel_connector (Jouni Högander)
+- Work around binutils update in s390x perf (Justin M. Forbes)
+- iommu: Fix mapping check for 0x0 to avoid re-mapping it (Antheas Kapenekakis)
+- Revert the UKI dtbloader for F42 (Justin M. Forbes)
+- Turn on release_targets for F43/F42 (Justin M. Forbes)
+- Linux v6.19.7
+Resolves: 
+
+* Wed Mar 04 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.6-0]
+- net: macb: Fix tx/rx malfunction after phy link down and up (Kevin Hao)
+- net: macb: Replace open-coded device config retrieval with of_device_get_match_data() (Kevin Hao)
+- net: macb: convert to use .get_rx_ring_count (Breno Leitao)
+- net: cadence: macb: Discard pm_runtime_put() return value (Rafael J. Wysocki)
+- arm64: dts: broadcom: bcm2712: Add watchdog DT node (Stanimir Varbanov)
+- arm64: dts: broadcom: bcm2712: Enable RNG (Peter Robinson)
+- fedora: minor beeper cleanups (Peter Robinson)
+- Add config introduced in 6.19.4 (Justin M. Forbes)
+- Linux v6.19.6
+Resolves: 
+
+* Fri Feb 27 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.5-0]
+- Linux v6.19.5
+Resolves: 
+
+* Thu Feb 26 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.4-0]
+- media: ipu-bridge: Add upside-down sensor DMI quirk for Dell XPS 13 9340 and XPS 14 9440 (Hans de Goede)
+- Linux v6.19.4
+Resolves: 
+
 * Thu Feb 19 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.3-0]
 - Linux v6.19.3
 Resolves: 
