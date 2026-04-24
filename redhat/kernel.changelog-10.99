@@ -1,3 +1,7 @@
+* Sat Apr 18 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.13-0]
+- Linux v6.19.13
+Resolves: 
+
 * Sun Apr 12 2026 Justin M. Forbes <jforbes@fedoraproject.org> [6.19.12-0]
 - Add new config item for 6.19.12 (Justin M. Forbes)
 - redhat/configs: enable the DIBS driver as it is now required for the SMC networking (Dan Horák)
